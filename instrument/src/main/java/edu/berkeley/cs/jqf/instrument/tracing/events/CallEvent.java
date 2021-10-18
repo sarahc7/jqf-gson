@@ -44,7 +44,7 @@ public class CallEvent extends TraceEvent {
 
     public String getInvokedMethodName() {
         if (str == null) {
-            this.str = invokedMethod.getOwner() + "#" + invokedMethod.getName() + invokedMethod.getDesc();
+            this.str = invokedMethod.getOwner() + "." + invokedMethod.getName() + ":" + invokedMethod.getDesc();
         }
         return str;
     }

@@ -11,6 +11,9 @@ print_usage() {
   echo "Usage: $0 [-c CLASSPATH] [-i] [-v] [-r] TEST_CLASS TEST_METHOD INPUT_FILE.."
 }
 
+# Print generated arguments
+export JVM_OPTS="$JVM_OPTS -Djqf.repro.printArgs=true"
+
 while getopts ":c:ivre" opt; do
   case $opt in
     /?)

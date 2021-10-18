@@ -31,6 +31,8 @@ package edu.berkeley.cs.jqf.fuzz.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.TreeSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
@@ -50,6 +52,8 @@ public class Coverage implements TraceEventVisitor {
 
     /** The coverage counts for each edge. */
     private final Counter counter = new NonZeroCachingCounter(COVERAGE_MAP_SIZE);
+
+    private Set<String> coveredMethods = new TreeSet<String>();
 
     /** Creates a new coverage map. */
     public Coverage() {
@@ -96,6 +100,7 @@ public class Coverage implements TraceEventVisitor {
     @Override
     public void visitCallEvent(CallEvent e) {
         counter.increment(e.getIid());
+        coveredMethods.add(e.getInvokedMethodName());
     }
 
     /**
@@ -115,6 +120,8 @@ public class Coverage implements TraceEventVisitor {
     public Collection<Integer> getCovered() {
         return counter.getNonZeroIndices();
     }
+
+    public Set<String> getCoveredMethods() { return coveredMethods; }
 
     /**
      * Returns a set of edges in this coverage that don't exist in baseline
@@ -138,6 +145,7 @@ public class Coverage implements TraceEventVisitor {
      */
     public void clear() {
         this.counter.clear();
+        this.coveredMethods = new TreeSet<String>();
     }
 
     private static int[] HOB_CACHE = new int[1024];
@@ -194,6 +202,10 @@ public class Coverage implements TraceEventVisitor {
             }
         }
         return changed;
+    }
+
+    public void updateCoveredMethods(Coverage that) {
+        this.coveredMethods.addAll(that.getCoveredMethods());
     }
 
     /** Returns a hash code of the edge counts in the coverage map. */

@@ -568,7 +568,7 @@ public class ZestGuidance implements Guidance {
         infoLog("\n# Cycle " + cyclesCompleted + " completed.");
 
         // Go over all inputs and do a sanity check (plus log)
-        infoLog("Here is a list of favored inputs:");
+        // infoLog("Here is a list of favored inputs:");
         int sumResponsibilities = 0;
         numFavoredLastCycle = 0;
         for (Input input : savedInputs) {
@@ -580,7 +580,7 @@ public class ZestGuidance implements Guidance {
             }
         }
         int totalCoverageCount = totalCoverage.getNonZeroCount();
-        infoLog("Total %d branches covered", totalCoverageCount);
+        // ("Total %d branches covered", totalCoverageCount);
         if (sumResponsibilities != totalCoverageCount) {
             if (multiThreaded) {
                 infoLog("Warning: other threads are adding coverage between test executions");
@@ -589,8 +589,16 @@ public class ZestGuidance implements Guidance {
             }
         }
 
+        try (PrintWriter out = new PrintWriter(logFile)) {
+            for (String m : totalCoverage.getCoveredMethods()) {
+                if (m.contains("gson")) infoLog(m);
+            }
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
+
         // Break log after cycle
-        infoLog("\n\n\n");
+        // infoLog("\n\n\n");
     }
 
     /**
@@ -831,6 +839,8 @@ public class ZestGuidance implements Guidance {
         if (result == Result.SUCCESS) {
             validCoverage.updateBits(runCoverage);
         }
+
+        totalCoverage.updateCoveredMethods(runCoverage);
 
         // Coverage after
         int nonZeroAfter = totalCoverage.getNonZeroCount();
