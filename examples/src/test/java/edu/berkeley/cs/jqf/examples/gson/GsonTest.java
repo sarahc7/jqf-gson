@@ -18,13 +18,14 @@ public class GsonTest {
     private Gson gson = new Gson();
     private static final Logger logger = LoggerFactory.getLogger(GsonTest.class);
 
-    @Fuzz
-    public void testFromGson(@From(GsonGenerator.class) Pair<String, String> jsonAndJavaClass) throws Exception {
-        gson.fromJson(jsonAndJavaClass.getKey(), CompilerUtils.CACHED_COMPILER.loadFromJava("Main", jsonAndJavaClass.getValue()));
-    }
+//    @Fuzz
+//    public void testFromGson(@From(GsonGenerator.class) Pair<String, String> jsonAndJavaClass) throws Exception {
+//        gson.fromJson(jsonAndJavaClass.getKey(), CompilerUtils.CACHED_COMPILER.loadFromJava("Main", jsonAndJavaClass.getValue()));
+//    }
 
     @Fuzz
-    public void testToGson(@From(GsonGenerator.class) Pair<String, String> jsonAndJavaClass) throws Exception {
-        gson.toJson(CompilerUtils.CACHED_COMPILER.loadFromJava("Main", jsonAndJavaClass.getValue()).getDeclaredConstructor().newInstance());
+    public void testToGson(@From(JavaGenerator.class) String javaCode) throws Exception {
+        String json = gson.toJson(CompilerUtils.CACHED_COMPILER.loadFromJava("Main", javaCode).getDeclaredConstructor().newInstance());
+        // logger.info(json);
     }
 }
