@@ -40,6 +40,7 @@ public class CallEvent extends TraceEvent {
     public CallEvent(int iid, MemberRef containingMethod, int lineNumber, MemberRef invokedMethod) {
         super(iid, containingMethod, lineNumber);
         this.invokedMethod = invokedMethod;
+        //if (getInvokedMethodName().contains("Ljava/util/concurrent/atomic")) System.out.println(getInvokedMethodName());
     }
 
     public String getInvokedMethodName() {

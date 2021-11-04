@@ -591,7 +591,7 @@ public class ZestGuidance implements Guidance {
 
         try (PrintWriter out = new PrintWriter(logFile)) {
             for (String m : totalCoverage.getCoveredMethods()) {
-                if (m.contains("gson")) infoLog(m);
+                if (m.startsWith("com/google/gson/")) infoLog(m);
             }
         } catch (IOException e) {
             throw new GuidanceException(e);
@@ -757,14 +757,14 @@ public class ZestGuidance implements Guidance {
                         displayStats();
                     }
 
-                    infoLog("Saving new input (at run %d): " +
-                                    "input #%d " +
-                                    "of size %d; " +
-                                    "reason = %s",
-                            numTrials,
-                            savedInputs.size(),
-                            currentInput.size(),
-                            why);
+//                    infoLog("Saving new input (at run %d): " +
+//                                    "input #%d " +
+//                                    "of size %d; " +
+//                                    "reason = %s",
+//                            numTrials,
+//                            savedInputs.size(),
+//                            currentInput.size(),
+//                            why);
 
                     // Save input to queue and to disk
                     final String reason = why;
@@ -799,7 +799,7 @@ public class ZestGuidance implements Guidance {
                     infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
-                    infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+//                    infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
                     if (EXACT_CRASH_PATH != null && !EXACT_CRASH_PATH.equals("")) {
                         File exactCrashFile = new File(EXACT_CRASH_PATH);
@@ -950,7 +950,7 @@ public class ZestGuidance implements Guidance {
         String how = currentInput.desc;
         File saveFile = new File(savedCorpusDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
-        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+//        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
         // If not using guidance, do nothing else
         if (blind) {
