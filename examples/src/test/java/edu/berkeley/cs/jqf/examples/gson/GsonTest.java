@@ -26,12 +26,36 @@ public class GsonTest {
 //    }
 
     @Fuzz
-    public void testToGson(@From(JavaGenerator.class) Pair gsonAndJava) throws Exception {
-        Gson gson = (Gson) gsonAndJava.getKey();
-        String java = (String) gsonAndJava.getValue();
+    public void testToGson(@From(JavaGenerator.class) String java) throws Exception {
+//        GsonBuilder builder = new GsonBuilder()
+//                .setPrettyPrinting()
+//                .serializeNulls()
+//                .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
+//                .enableComplexMapKeySerialization();
+//
+//        for (Object obj : classesAndAdapters.keySet()) {
+//            String name = (String) obj;
+//
+//            try {
+//                Pair p = (Pair) classesAndAdapters.get(name);
+//                String c = (String) p.getKey(), adapter = (String) p.getValue();
+//
+//                if (adapter == null) continue;
+//                //logger.info("c: " + c);
+//                //logger.info("adapter: " + adapter);
+//                builder.registerTypeHierarchyAdapter(CompilerUtils.CACHED_COMPILER.loadFromJava(name, c),
+//                        CompilerUtils.CACHED_COMPILER.loadFromJava(name + "_Adapter", adapter).getDeclaredConstructor().newInstance());
+//            } catch (Exception e) {
+//                System.err.println(e);
+//            }
+//        }
+
+
+        Gson gson = new Gson();
+        //String java = (String) ((Pair) classesAndAdapters.get("Main")).getKey();
 
         String json = gson.toJson(CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java).getDeclaredConstructor().newInstance());
-        // logger.info(json);
+        //logger.info(json);
         gson.fromJson(json, CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java));
 
         JsonElement rootNode = gson.toJsonTree(CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java).getDeclaredConstructor().newInstance());
