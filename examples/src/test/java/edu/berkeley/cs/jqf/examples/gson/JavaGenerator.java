@@ -18,74 +18,85 @@ import com.squareup.javapoet.*;
 
 import net.openhft.compiler.CompilerUtils;
 
-public class JavaGenerator extends Generator<String> {
+public class JavaGenerator extends Generator<Pair> {
 
     private static Set<String> fieldNames;
+    private static Set<String> topLevelTypeNames;
     private static Set<String> typeNames;
-    private static Map<String, Pair<String, String>> topLevelTypes;
-    private static Map<String, Set<String>> enumTypes;
-    private static boolean hasCustomTypeConverters;
 
-    private final String INT = "int";
-    private final String BOOLEAN = "boolean";
+    private final String BOOLEAN = "Boolean";
+    private final String CHARACTER = "Character";
     private final String STRING = "String";
+    private final String NUMBER = "Number";
     private final String OBJECT = "Object";
+    private final String[] TYPES = {BOOLEAN, CHARACTER, STRING, NUMBER, OBJECT};
 
     public JavaGenerator() {
-        super(String.class);
+        super(Pair.class);
+        this.topLevelTypeNames = new HashSet<>();
     }
 
     @Override
-    public String generate(SourceOfRandomness random, GenerationStatus __ignore__) {
+    public Pair generate(SourceOfRandomness random, GenerationStatus __ignore__) {
         this.fieldNames = new HashSet<>();
         this.typeNames = new HashSet<>();
-        this.topLevelTypes = new HashMap<>();
-        this.enumTypes = new HashMap<>();
 
-        TypeSpec.Builder type = TypeSpec.classBuilder("Main");
-
-        generateEnumTypes(random);
-
-        this.hasCustomTypeConverters = random.nextBoolean();
-        String main = generateTypes(random, type).toString();
-
-        //return topLevelTypes;
-
-        return String.join("\n", topLevelTypes.values().stream().map(t -> t.getKey()).collect(Collectors.toList()));
-
-//        if (!hasCustomTypeConverters) return new Pair(new Gson(), main);
-//        else {
-//            GsonBuilder builder = new GsonBuilder()
-//                    .setPrettyPrinting()
-//                    .serializeNulls()
-//                    .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
-//                    .enableComplexMapKeySerialization();
-//            // System.out.println(typeConverters);
-//            for (Pair<String, TypeSpec> p : typeConverters) {
-//                try {
-//                    String name = p.getKey(), adapter = p.getValue().toString();
-////                    System.out.println("name: " + name);
-//                    // System.out.println("java: " + topLevelTypes.get(name).toString());
-//                    // feed only single adapter class
-//                    builder.registerTypeHierarchyAdapter(CompilerUtils.CACHED_COMPILER.loadFromJava(name, topLevelTypes.get(name).toString()),
-//                            CompilerUtils.CACHED_COMPILER.loadFromJava(name + "_Adapter", adapter).getDeclaredConstructor().newInstance());
-//                } catch (Exception e) {
-//                    System.err.println(e);
-//                }
-//            }
-//
-//            return new Pair(builder.create(), main);
-//        }
+        String className = generateTopLevelTypeName(random);
+        TypeSpec.Builder type = TypeSpec.classBuilder(className);
+        return new Pair(generateGenerator(random), new Pair(className, generateTypes(random, type).toString()));
     }
 
-    private List<TypeSpec> generateEnumTypes(SourceOfRandomness random) {
-        List<TypeSpec> types = new ArrayList<>();
-        int numTypes = 1;
-        for (int i = 0; i < numTypes; i++) {
-            types.add(generateEnumType(random));
+    private static class SpecificClassExclusionStrategy implements ExclusionStrategy {
+        private final Class<?> excludedThisClass;
+
+        public SpecificClassExclusionStrategy(Class<?> excludedThisClass) {
+            this.excludedThisClass = excludedThisClass;
         }
 
-        return types;
+        public boolean shouldSkipClass(Class<?> clazz) {
+            return excludedThisClass.equals(clazz);
+        }
+
+        public boolean shouldSkipField(FieldAttributes f) {
+            return excludedThisClass.equals(f.getDeclaredClass());
+        }
+    }
+
+    public Gson generateGenerator(SourceOfRandomness random) {
+        GsonBuilder gson = new GsonBuilder();
+//        gson.addDeserializationExclusionStrategy(ExclusionStrategy strategy);
+//        gson.addSerializationExclusionStrategy(ExclusionStrategy strategy);
+        if (random.nextBoolean()) gson.disableHtmlEscaping();
+        if (random.nextBoolean()) gson.disableInnerClassSerialization();
+        if (random.nextBoolean()) gson.enableComplexMapKeySerialization();
+//        if (random.nextBoolean()) gson.excludeFieldsWithModifiers(int... modifiers);
+        if (random.nextBoolean()) gson.excludeFieldsWithoutExposeAnnotation();
+        if (random.nextBoolean()) gson.generateNonExecutableJson();
+//        if (random.nextBoolean()) gson.registerTypeAdapter(java.lang.reflect.Type type, java.lang.Object typeAdapter);
+//        if (random.nextBoolean()) gson.registerTypeAdapterFactory(TypeAdapterFactory factory);
+//        if (random.nextBoolean()) gson.registerTypeHierarchyAdapter(java.lang.Class<?> baseType, java.lang.Object typeAdapter);
+        if (random.nextBoolean()) gson.serializeNulls();
+        if (random.nextBoolean()) gson.serializeSpecialFloatingPointValues();
+        if (random.nextBoolean()) gson.setDateFormat(DateFormat.DEFAULT);
+        if (random.nextBoolean()) gson.setDateFormat(DateFormat.DEFAULT, DateFormat.DEFAULT);
+        if (random.nextBoolean()) gson.setDateFormat(new SimpleDateFormat().toPattern());
+        if (random.nextBoolean()) gson.setExclusionStrategies(new SpecificClassExclusionStrategy(getTypeClass(random.choose(TYPES))));
+        if (random.nextBoolean()) {
+            gson.setFieldNamingPolicy(random.choose(new HashSet<>(Arrays.asList(
+                    FieldNamingPolicy.IDENTITY,
+                    FieldNamingPolicy.LOWER_CASE_WITH_DASHES,
+                    FieldNamingPolicy.LOWER_CASE_WITH_DOTS,
+                    FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES,
+                    FieldNamingPolicy.UPPER_CAMEL_CASE,
+                    FieldNamingPolicy.UPPER_CAMEL_CASE_WITH_SPACES
+            ))));
+        }
+//        if (random.nextBoolean()) gson.setFieldNamingStrategy(FieldNamingStrategy fieldNamingStrategy);
+        if (random.nextBoolean()) gson.setLenient();
+//        if (random.nextBoolean()) gson.setLongSerializationPolicy(LongSerializationPolicy serializationPolicy);
+        if (random.nextBoolean()) gson.setPrettyPrinting();
+//        if (random.nextBoolean()) gson.setVersion(double ignoreVersionsAfter);
+        return gson.create();
     }
 
     private String generateConstant(SourceOfRandomness random) {
@@ -97,44 +108,33 @@ public class JavaGenerator extends Generator<String> {
         return s;
     }
 
-    private TypeSpec generateEnumType(SourceOfRandomness random) {
-        String name = generateTypeName(random);
-        TypeSpec.Builder enumBuilder = TypeSpec.enumBuilder(name);
-
-        enumTypes.put(name, new HashSet<>());
-
-        int numConstants = random.nextInt(1, 4);
-        for (int i = 0; i < numConstants; i++) {
-            String enumConstant = generateConstant(random);
-            while (enumTypes.get(name).contains(enumConstant)) enumConstant = generateConstant(random);
-
-            enumBuilder.addEnumConstant(enumConstant);
-            enumTypes.get(name).add(enumConstant);
-        }
-
-        TypeSpec type = enumBuilder.build();
-        if (random.nextBoolean()) topLevelTypes.put(name, new Pair(type.toString(), generateTypeAdapter(name).toString()));
-        else topLevelTypes.put(name, new Pair(type.toString(), null));
-
-        return type;
-    }
-
     private TypeSpec generateTypes(SourceOfRandomness random, TypeSpec.Builder builder) {
         int numTypes = random.nextInt(3);
+        String[] types = {"TYPE", "ENUM"};
         for (int i = 0; i < numTypes; i++) {
-            TypeSpec type = generateType(random);
-            builder.addType(type);
+            String typeName = random.choose(types);
 
-            FieldSpec f = FieldSpec.builder(ClassName.bestGuess(type.name), generateFieldName(random))
-                    .addModifiers(Modifier.PUBLIC)
-                    .initializer("new $L()", type.name)
-                    .build();
-            builder.addField(f);
+            TypeSpec type;
+            FieldSpec f;
+            if (typeName.equals("TYPE")) {
+                type = generateType(random);
+                f = FieldSpec.builder(ClassName.bestGuess(type.name), generateFieldName(random))
+                        .addModifiers(Modifier.PUBLIC)
+                        .initializer("new $L()", type.name)
+                        .build();
+            } else {
+                Pair<TypeSpec, Set> p = generateEnumType(random);
+                type = p.getKey();
+                f = FieldSpec.builder(ClassName.bestGuess(type.name), generateFieldName(random))
+                        .addModifiers(Modifier.PUBLIC)
+                        .initializer("$L.$L", type.name, random.choose(p.getValue()))
+                        .build();
+            }
+
+            builder.addType(type).addField(f);
         }
 
-        TypeSpec type = builder.build();
-        topLevelTypes.put("Main", new Pair(type.toString(), null));
-        return type;
+        return builder.build();
     }
 
     private TypeSpec generateType(SourceOfRandomness random) {
@@ -148,10 +148,27 @@ public class JavaGenerator extends Generator<String> {
                 .addFields(fields)
                 .addMethod(constructor.build());
 
-        int hasSubtypes = random.nextInt(4);
-        if (hasSubtypes == 0) return generateTypes(random, type);
+        boolean hasSubtypes = random.nextBoolean();
+        if (hasSubtypes) return generateTypes(random, type);
 
         return type.build();
+    }
+
+    private Pair generateEnumType(SourceOfRandomness random) {
+        String name = generateTypeName(random);
+        TypeSpec.Builder enumBuilder = TypeSpec.enumBuilder(name);
+
+        int numConstants = random.nextInt(1, 4);
+        Set<String> enumTypes = new HashSet<>();
+        for (int i = 0; i < numConstants; i++) {
+            String enumConstant = generateConstant(random);
+            while (enumTypes.contains(enumConstant)) enumConstant = generateConstant(random);
+
+            enumBuilder.addEnumConstant(enumConstant);
+            enumTypes.add(enumConstant);
+        }
+
+        return new Pair(enumBuilder.build(), enumTypes);
     }
 
     private List<FieldSpec> generateFields(SourceOfRandomness random, MethodSpec.Builder constructor) {
@@ -167,80 +184,75 @@ public class JavaGenerator extends Generator<String> {
 
     private FieldSpec generateField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
         return random.choose(Arrays.<Supplier<FieldSpec>>asList(
-                () -> generateEnumField(random, name, constructor)
-//                () -> generateCollectionField(random, name),
-//                () -> generateArrayField(random, name),
-//                () -> generateStringField(random, name),
-//                () -> generateStringBuilderField(random, name),
-//                () -> generateStringBufferField(random, name),
-//                () -> generateBooleanField(random, name),
-//                () -> generateAtomicBooleanField(random, name),
-//                () -> generateByteField(random, name),
-//                () -> generateCharacterField(random, name),
-//                () -> generateIntegerField(random, name),
-//                () -> generateAtomicIntegerField(random, name),
-//                () -> generateAtomicIntegerArrayField(random, name),
-//                () -> generateNumberField(random, name),
-//                () -> generateBigDecimalField(random, name),
-//                () -> generateBigIntegerField(random, name),
-//                () -> generateURLField(random, name, constructor),
-//                () -> generateURIField(random, name, constructor),
-//                () -> generateUUIDField(random, name),
-//                () -> generateLocaleField(random, name),
-//                () -> generateInetAddressField(random, name, constructor),
-//                () -> generateBitSetField(random, name, constructor),
-//                () -> generateDateField(random, name),
-//                () -> generateCalendarField(random, name),
-//                () -> generateCurrencyField(random, name)
+                () -> generateCollectionField(random, name),
+                () -> generateArrayField(random, name),
+                () -> generateStringField(random, name),
+                () -> generateStringBuilderField(random, name),
+                () -> generateStringBufferField(random, name),
+                () -> generateBooleanField(random, name),
+                () -> generateAtomicBooleanField(random, name),
+                () -> generateCharacterField(random, name),
+                () -> generateIntegerField(random, name),
+                () -> generateAtomicIntegerField(random, name),
+                () -> generateAtomicIntegerArrayField(random, name),
+                () -> generateNumberField(random, name),
+                () -> generateBigDecimalField(random, name),
+                () -> generateBigIntegerField(random, name),
+                () -> generateURLField(random, name, constructor),
+                () -> generateURIField(random, name, constructor),
+                () -> generateUUIDField(random, name),
+                () -> generateLocaleField(random, name),
+                () -> generateInetAddressField(random, name, constructor),
+                () -> generateBitSetField(random, name, constructor),
+                () -> generateDateField(random, name),
+                () -> generateCalendarField(random, name),
+                () -> generateCurrencyField(random, name),
+                () -> generateJsonElementField(random, name),
+                () -> generateJsonArrayField(random, name, constructor),
+                () -> generateJsonObjectField(random, name, constructor)
         )).get();
+    }
+
+    private Class getTypeClass(String type) {
+        if (type.equals(BOOLEAN)) {
+            return Boolean.class;
+        } else if (type.equals(CHARACTER)) {
+            return Character.class;
+        } else if (type.equals(STRING)) {
+            return String.class;
+        } else if (type.equals(NUMBER)) {
+            return Number.class;
+        } else {
+            return Object.class;
+        }
+    }
+
+    private String getValue(SourceOfRandomness random, String type) {
+        if (type.equals(BOOLEAN)) {
+            return Boolean.toString(random.nextBoolean());
+        } else if (type.equals(CHARACTER)) {
+            return "'" + generateCharacter(random) + "'";
+        } else if (type.equals(STRING)) {
+            return "\"" + generateString(random) + "\"";
+        } else if (type.equals(NUMBER)) {
+            return generateNumber(random);
+        } else {
+            return getValue(random, random.choose(TYPES));
+        }
     }
 
     private List<String> generateElements(SourceOfRandomness random, String type) {
         List<String> elements = new ArrayList<>();
         int numElements = random.nextInt(4);
         for (int i = 0; i < numElements; i++) {
-            if (type.equals(INT)) {
-                elements.add(generateInteger(random));
-            } else if (type.equals(BOOLEAN)) {
-                elements.add(generateBoolean(random));
-            } else if (type.equals(STRING)) {
-                elements.add("\"" + generateString(random) + "\"");
-            } else {
-                elements.add(random.choose(Arrays.<Supplier<String>>asList(
-                        () -> generateInteger(random),
-                        () -> generateBoolean(random),
-                        () -> "\"" + generateString(random) + "\""
-                )).get());
-            }
+            elements.add(getValue(random, type));
         }
 
         return elements;
     }
 
-    private FieldSpec generateEnumField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
-        if (enumTypes.size() == 0) generateField(random, name, constructor);
-
-        ClassName enumType = ClassName.bestGuess(random.choose(enumTypes.keySet()));
-        return FieldSpec.builder(enumType, name)
-                .addModifiers(Modifier.PUBLIC)
-                .initializer("$T.$L", enumType, random.choose(enumTypes.get(enumType.simpleName())))
-                .build();
-    }
-
-    private Type getTypeClass(String type) {
-        if (type.equals(INT)) {
-            return Integer.class;
-        } else if (type.equals(BOOLEAN)) {
-            return Boolean.class;
-        } else if (type.equals(STRING)) {
-            return String.class;
-        } else {
-            return Object.class;
-        }
-    }
-
     private FieldSpec generateCollectionField(SourceOfRandomness random, String name) {
-        String type = random.choose(new String[]{INT, BOOLEAN, STRING, OBJECT});
+        String type = random.choose(TYPES);
         String elements = generateElements(random, type).stream().collect(Collectors.joining(", "));
 
         FieldSpec.Builder collectionField = FieldSpec.builder(ParameterizedTypeName
@@ -250,16 +262,18 @@ public class JavaGenerator extends Generator<String> {
     }
 
     private FieldSpec generateArrayField(SourceOfRandomness random, String name) {
-        String type = random.choose(new String[]{INT, BOOLEAN, STRING, OBJECT});
+        String type = random.choose(TYPES);
         String elements = generateElements(random, type).stream().collect(Collectors.joining(", "));
 
         FieldSpec.Builder arrayField;
-        if (type.equals(INT)) {
-            arrayField = FieldSpec.builder(Integer[].class, name);
-        } else if (type.equals(BOOLEAN)) {
+        if (type.equals(BOOLEAN)) {
             arrayField = FieldSpec.builder(Boolean[].class, name);
+        } else if (type.equals(CHARACTER)) {
+            arrayField = FieldSpec.builder(Character[].class, name);
         } else if (type.equals(STRING)) {
             arrayField = FieldSpec.builder(String[].class, name);
+        } else if (type.equals(NUMBER)) {
+            arrayField = FieldSpec.builder(Number[].class, name);
         } else {
             arrayField = FieldSpec.builder(Object[].class, name);
         }
@@ -267,17 +281,20 @@ public class JavaGenerator extends Generator<String> {
         return arrayField.addModifiers(Modifier.PUBLIC).initializer("{$L}", elements).build();
     }
 
-    private FieldSpec generateMapField(SourceOfRandomness random, String name) {
-        String t1 = random.choose(new String[]{INT, BOOLEAN, STRING, OBJECT});
-        String t2 = random.choose(new String[]{INT, BOOLEAN, STRING, OBJECT});
-        // List<String> e1 = generateElements(random, t1), e2 = generateElements(random, t2);
-
-        return FieldSpec.builder(ParameterizedTypeName
-                .get(Map.class, getTypeClass(t1), getTypeClass(t2)), name)
-                .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T()", HashMap.class)
-                .build();
-    }
+//    private FieldSpec generateMapField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
+//        String t1 = random.choose(TYPES), t2 = random.choose(TYPES);
+//
+//        int numEntries = random.nextInt(4);
+//        for (int i = 0; i < numEntries; i++) {
+//            constructor.addStatement("$L.put($L, $L)", name, getValue(random, t1), getValue(random, t2));
+//        }
+//
+//        return FieldSpec.builder(ParameterizedTypeName
+//                .get(LinkedTreeMap.class, getTypeClass(t1), getTypeClass(t2)), name)
+//                .addModifiers(Modifier.PUBLIC)
+//                .initializer("new $T()", LinkedTreeMap.class)
+//                .build();
+//    }
 
     private String generateString(SourceOfRandomness random) {
         int len = random.nextInt(1, 6);
@@ -309,86 +326,93 @@ public class JavaGenerator extends Generator<String> {
                 .build();
     }
 
-    private String generateBoolean(SourceOfRandomness random) {
-        return random.choose(new String[]{"true", "false"});
-    }
-
     private FieldSpec generateBooleanField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(Boolean.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("$L", generateBoolean(random))
+                .initializer("$L", random.nextBoolean())
                 .build();
     }
 
     private FieldSpec generateAtomicBooleanField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(AtomicBoolean.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T($L)", AtomicBoolean.class, generateBoolean(random))
+                .initializer("new $T($L)", AtomicBoolean.class, random.nextBoolean())
                 .build();
     }
 
-    private FieldSpec generateByteField(SourceOfRandomness random, String name) {
-        return FieldSpec.builder(Byte.class, name)
-                .addModifiers(Modifier.PUBLIC)
-                .initializer("$L", random.nextBytes(1)[0])
-                .build();
+//    private FieldSpec generateByteField(SourceOfRandomness random, String name) {
+//        return FieldSpec.builder(Byte.class, name)
+//                .addModifiers(Modifier.PUBLIC)
+//                .initializer("$L", random.nextBytes(1)[0])
+//                .build();
+//    }
+
+    private String generateCharacter(SourceOfRandomness random) {
+        return Character.toString(random.nextChar('a', 'z'));
     }
 
     private FieldSpec generateCharacterField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(Character.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("'$L'", random.nextChar('a', 'z'))
+                .initializer("'$L'", generateCharacter(random))
                 .build();
-    }
-
-    private String generateInteger(SourceOfRandomness random) {
-        return random.choose(Arrays.<Supplier<String>>asList(
-                () -> Integer.toString(random.nextInt(10)),
-                () -> Integer.toString(random.nextInt(1, 10)) + generateDigits(random),
-                () -> "-" + random.nextInt(10),
-                () -> "-" + random.nextInt(1, 10) + generateDigits(random)
-        )).get();
     }
 
     private FieldSpec generateIntegerField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(Integer.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("$L", generateInteger(random))
+                .initializer("$L", random.nextInt())
                 .build();
     }
 
     private FieldSpec generateAtomicIntegerField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(AtomicInteger.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T($L)", AtomicInteger.class, generateInteger(random))
+                .initializer("new $T($L)", AtomicInteger.class, random.nextInt())
                 .build();
     }
 
     private FieldSpec generateAtomicIntegerArrayField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(AtomicIntegerArray.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T($L)", AtomicIntegerArray.class, generateInteger(random))
+                .initializer("new $T($L)", AtomicIntegerArray.class, random.nextInt(6))
                 .build();
+    }
+
+    private String generateNumber(SourceOfRandomness random) {
+        return random.choose(Arrays.<Supplier<CodeBlock.Builder>>asList(
+                () -> CodeBlock.builder().add("new $T($L)", AtomicInteger.class, random.nextInt()),
+                () -> CodeBlock.builder().add("new $T($LL)", AtomicLong.class, random.nextLong(Long.MIN_VALUE, Long.MAX_VALUE)),
+                () -> CodeBlock.builder().add("new $T($S)", BigDecimal.class, random.nextInt()),
+                () -> CodeBlock.builder().add("new $T($S)", BigInteger.class, random.nextInt()),
+                () -> CodeBlock.builder().add("new $T((byte) $L)", Byte.class, random.nextBytes(1)[0]),
+                () -> CodeBlock.builder().add("new $T($L)", Double.class, random.nextDouble()),
+                () -> CodeBlock.builder().add("new $T($Lf)", Float.class, random.nextFloat(Float.MIN_VALUE, Float.MAX_VALUE)),
+                () -> CodeBlock.builder().add("new $T($L)", Integer.class, random.nextInt()),
+                () -> CodeBlock.builder().add("new $T($LL)", Long.class, random.nextLong(Long.MIN_VALUE, Long.MAX_VALUE)),
+                () -> CodeBlock.builder().add("new $T((short) $L)", Short.class, random.nextShort(Short.MIN_VALUE, Short.MAX_VALUE)),
+                () -> CodeBlock.builder().add("new $T($S)", LazilyParsedNumber.class, generateString(random))
+        )).get().build().toString();
     }
 
     private FieldSpec generateNumberField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(Number.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T($S)", LazilyParsedNumber.class, generateString(random))
+                .initializer(generateNumber(random))
                 .build();
     }
 
     private FieldSpec generateBigDecimalField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(BigDecimal.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T($S)", BigDecimal.class, generateInteger(random))
+                .initializer("new $T($S)", BigDecimal.class, random.nextInt())
                 .build();
     }
 
     private FieldSpec generateBigIntegerField(SourceOfRandomness random, String name) {
         return FieldSpec.builder(BigInteger.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T($S)", BigInteger.class, generateInteger(random))
+                .initializer("new $T($S)", BigInteger.class, random.nextInt())
                 .build();
     }
 
@@ -424,18 +448,11 @@ public class JavaGenerator extends Generator<String> {
     }
 
     private FieldSpec generateLocaleField(SourceOfRandomness random, String name) {
-        String[] languages = {"CHINESE", "ENGLISH", "FRENCH", "GERMAN","JAPANESE", "KOREAN", "SIMPLIFIED_CHINESE", "TRADITIONAL_CHINESE"};
+        String[] languages = {"CHINESE", "ENGLISH", "FRENCH", "GERMAN", "JAPANESE", "KOREAN", "SIMPLIFIED_CHINESE", "TRADITIONAL_CHINESE"};
 
         return FieldSpec.builder(Locale.class, name)
                 .addModifiers(Modifier.PUBLIC)
                 .initializer("$T.$L", Locale.class, random.choose(languages))
-                .build();
-    }
-
-    private FieldSpec generateCurrencyField(SourceOfRandomness random, String name) {
-        return FieldSpec.builder(Currency.class, name)
-                .addModifiers(Modifier.PUBLIC)
-                .initializer("$T.getInstance($S)", Currency.class, random.choose(Currency.getAvailableCurrencies()))
                 .build();
     }
 
@@ -449,13 +466,6 @@ public class JavaGenerator extends Generator<String> {
         return FieldSpec.builder(InetAddress.class, name)
                 .addModifiers(Modifier.PUBLIC)
                 .build();
-    }
-
-    private String generateDigits(SourceOfRandomness random) {
-        int maxDigits = random.nextInt(1, 3);
-        String digits = "";
-        for (int i = 0; i < maxDigits; i++) digits += random.nextInt(10);
-        return digits;
     }
 
     private FieldSpec generateBitSetField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
@@ -502,15 +512,9 @@ public class JavaGenerator extends Generator<String> {
     }
 
     private FieldSpec generateDateField(SourceOfRandomness random, String name) {
-//        String serializeRet = CodeBlock.builder().addStatement("return new $T(src.toString())", JsonPrimitive.class).toString();
-//        String deserializeRet = CodeBlock.builder().addStatement("return new $T(json.getAsJsonPrimitive().getAsString())", Date.class).toString();
-//        TypeSpec typeConverter = generateTypeAdapter("DateTypeAdapter", Date.class, serializeRet, deserializeRet);
-//
-//        typeConverters.add(typeConverter);
-
         return FieldSpec.builder(Date.class, name)
                 .addModifiers(Modifier.PUBLIC)
-                .initializer("new $T()", Date.class)
+                .initializer("new $T($LL)", Date.class, random.nextLong(0, Long.MAX_VALUE))
                 .build();
     }
 
@@ -528,9 +532,70 @@ public class JavaGenerator extends Generator<String> {
                 .build();
     }
 
+    private FieldSpec generateCurrencyField(SourceOfRandomness random, String name) {
+        return FieldSpec.builder(Currency.class, name)
+                .addModifiers(Modifier.PUBLIC)
+                .initializer("$T.getInstance($S)", Currency.class, random.choose(Currency.getAvailableCurrencies()))
+                .build();
+    }
+
+    private CodeBlock generateJsonPrimitive(SourceOfRandomness random) {
+        return CodeBlock.builder().add("new $T($L)", JsonPrimitive.class, getValue(random, random.choose(TYPES))).build();
+    }
+
+    private CodeBlock generateJsonElement(SourceOfRandomness random, String name) {
+        return random.choose(Arrays.<Supplier<CodeBlock>>asList(
+                () -> generateJsonPrimitive(random),
+                () -> CodeBlock.builder().add("$T.INSTANCE", JsonNull.class).build()
+        )).get();
+    }
+
+    private FieldSpec generateJsonElementField(SourceOfRandomness random, String name) {
+        return FieldSpec.builder(JsonElement.class, name)
+                .addModifiers(Modifier.PUBLIC)
+                .initializer(generateJsonElement(random, name))
+                .build();
+    }
+
+    private FieldSpec generateJsonArrayField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
+        int numElements = random.nextInt(4);
+        for (int i = 0; i < numElements; i++) {
+            constructor.addStatement("$L.add($L)", name, random.choose(Arrays.<Supplier<String>>asList(
+                    () -> getValue(random, random.choose(TYPES)),
+                    () -> generateJsonPrimitive(random).toString(),
+                    () -> CodeBlock.builder().add("$T.INSTANCE", JsonNull.class).build().toString()
+            )).get());
+        }
+
+        constructor.addStatement("$T $L = $L", JsonElement.class, generateFieldName(random), name);
+
+        return FieldSpec.builder(JsonArray.class, name)
+                .addModifiers(Modifier.PUBLIC)
+                .initializer("new $T($L)", JsonArray.class, numElements)
+                .build();
+    }
+
+    private FieldSpec generateJsonObjectField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
+        int numElements = random.nextInt(4);
+        for (int i = 0; i < numElements; i++) {
+            constructor.addStatement("$L.addProperty($S, $L)", name, generateFieldName(random), getValue(random, random.choose(TYPES)));
+        }
+
+        return FieldSpec.builder(JsonObject.class, name)
+                .addModifiers(Modifier.PUBLIC)
+                .initializer("new $T()", JsonObject.class)
+                .build();
+    }
+
     private String generateFieldName(SourceOfRandomness random) {
         String s = random.nextChar('a', 'z') + "_" + fieldNames.size();
         fieldNames.add(s);
+        return s;
+    }
+
+    private String generateTopLevelTypeName(SourceOfRandomness random) {
+        String s =  "Main_" + random.nextChar('A', 'Z') + "_" + topLevelTypeNames.size();
+        topLevelTypeNames.add(s);
         return s;
     }
 

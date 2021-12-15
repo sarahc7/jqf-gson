@@ -580,7 +580,7 @@ public class ZestGuidance implements Guidance {
             }
         }
         int totalCoverageCount = totalCoverage.getNonZeroCount();
-        // ("Total %d branches covered", totalCoverageCount);
+        ("Total %d branches covered", totalCoverageCount);
         if (sumResponsibilities != totalCoverageCount) {
             if (multiThreaded) {
                 infoLog("Warning: other threads are adding coverage between test executions");
@@ -591,8 +591,9 @@ public class ZestGuidance implements Guidance {
 
         try (PrintWriter out = new PrintWriter(logFile)) {
             for (String m : totalCoverage.getCoveredMethods()) {
-                if (m.startsWith("com/google/gson/")) infoLog(m);
+                infoLog(m);
             }
+            out.close();
         } catch (IOException e) {
             throw new GuidanceException(e);
         }
@@ -757,14 +758,14 @@ public class ZestGuidance implements Guidance {
                         displayStats();
                     }
 
-//                    infoLog("Saving new input (at run %d): " +
-//                                    "input #%d " +
-//                                    "of size %d; " +
-//                                    "reason = %s",
-//                            numTrials,
-//                            savedInputs.size(),
-//                            currentInput.size(),
-//                            why);
+                    infoLog("Saving new input (at run %d): " +
+                                    "input #%d " +
+                                    "of size %d; " +
+                                    "reason = %s",
+                            numTrials,
+                            savedInputs.size(),
+                            currentInput.size(),
+                            why);
 
                     // Save input to queue and to disk
                     final String reason = why;
@@ -799,7 +800,7 @@ public class ZestGuidance implements Guidance {
                     infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
-//                    infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+                    infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
                     if (EXACT_CRASH_PATH != null && !EXACT_CRASH_PATH.equals("")) {
                         File exactCrashFile = new File(EXACT_CRASH_PATH);
@@ -841,6 +842,14 @@ public class ZestGuidance implements Guidance {
         }
 
         totalCoverage.updateCoveredMethods(runCoverage);
+//        try (PrintWriter out = new PrintWriter(logFile)) {
+//            for (String m : totalCoverage.getCoveredMethods()) {
+//                infoLog(m);
+//            }
+//            out.close();
+//        } catch (IOException e) {
+//            throw new GuidanceException(e);
+//        }
 
         // Coverage after
         int nonZeroAfter = totalCoverage.getNonZeroCount();
@@ -950,7 +959,7 @@ public class ZestGuidance implements Guidance {
         String how = currentInput.desc;
         File saveFile = new File(savedCorpusDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
-//        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
         // If not using guidance, do nothing else
         if (blind) {
@@ -976,9 +985,9 @@ public class ZestGuidance implements Guidance {
             Input oldResponsible = responsibleInputs.get(b);
             if (oldResponsible != null) {
                 oldResponsible.responsibilities.remove(b);
-                // infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
+                 infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
             } else {
-                // infoLog("-- Assuming new responsibility for %s", b);
+                 infoLog("-- Assuming new responsibility for %s", b);
             }
             // We are now responsible
             responsibleInputs.put(b, currentInput);
@@ -1190,7 +1199,7 @@ public class ZestGuidance implements Guidance {
             // If it exists in the list, return it
             if (key < values.size()) {
                 requested++;
-                // infoLog("Returning old byte at key=%d, total requested=%d", key, requested);
+                 infoLog("Returning old byte at key=%d, total requested=%d", key, requested);
                 return values.get(key);
             }
 
@@ -1202,7 +1211,7 @@ public class ZestGuidance implements Guidance {
                 int val = random.nextInt(256);
                 values.add(val);
                 requested++;
-                // infoLog("Generating fresh byte at key=%d, total requested=%d", key, requested);
+                 infoLog("Generating fresh byte at key=%d, total requested=%d", key, requested);
                 return val;
             }
         }

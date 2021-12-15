@@ -28,12 +28,16 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.TreeSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -56,9 +60,7 @@ public class Coverage implements TraceEventVisitor {
     private Set<String> coveredMethods = new TreeSet<String>();
 
     /** Creates a new coverage map. */
-    public Coverage() {
-
-    }
+    public Coverage() {}
 
     /**
      * Creates a copy of an existing coverage map.
@@ -100,7 +102,9 @@ public class Coverage implements TraceEventVisitor {
     @Override
     public void visitCallEvent(CallEvent e) {
         counter.increment(e.getIid());
-        coveredMethods.add(e.getInvokedMethodName());
+//        String methodName = e.getInvokedMethodName();
+//
+//        if (methodName.startsWith("com/google/gson/")) coveredMethods.add(methodName);
     }
 
     /**
@@ -204,9 +208,9 @@ public class Coverage implements TraceEventVisitor {
         return changed;
     }
 
-    public void updateCoveredMethods(Coverage that) {
-        this.coveredMethods.addAll(that.getCoveredMethods());
-    }
+//    public void updateCoveredMethods(Coverage that) {
+//        this.coveredMethods.addAll(that.getCoveredMethods());
+//    }
 
     /** Returns a hash code of the edge counts in the coverage map. */
     @Override

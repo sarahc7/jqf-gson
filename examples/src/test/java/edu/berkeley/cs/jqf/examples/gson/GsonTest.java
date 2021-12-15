@@ -26,40 +26,28 @@ public class GsonTest {
 //    }
 
     @Fuzz
-    public void testToGson(@From(JavaGenerator.class) String java) throws Exception {
-//        GsonBuilder builder = new GsonBuilder()
-//                .setPrettyPrinting()
-//                .serializeNulls()
-//                .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
-//                .enableComplexMapKeySerialization();
-//
-//        for (Object obj : classesAndAdapters.keySet()) {
-//            String name = (String) obj;
-//
-//            try {
-//                Pair p = (Pair) classesAndAdapters.get(name);
-//                String c = (String) p.getKey(), adapter = (String) p.getValue();
-//
-//                if (adapter == null) continue;
-//                //logger.info("c: " + c);
-//                //logger.info("adapter: " + adapter);
-//                builder.registerTypeHierarchyAdapter(CompilerUtils.CACHED_COMPILER.loadFromJava(name, c),
-//                        CompilerUtils.CACHED_COMPILER.loadFromJava(name + "_Adapter", adapter).getDeclaredConstructor().newInstance());
-//            } catch (Exception e) {
-//                System.err.println(e);
-//            }
-//        }
+    public void testToGson(@From(JavaGenerator.class) Pair gsonAndJava) throws Exception {
+        Gson gson = (Gson) gsonAndJava.getKey();
+        String name = (String) ((Pair) gsonAndJava.getValue()).getKey();
+        String java = (String) ((Pair) gsonAndJava.getValue()).getValue();
 
+        // logger.info("before created class");
 
-        Gson gson = new Gson();
-        //String java = (String) ((Pair) classesAndAdapters.get("Main")).getKey();
+        Class javaClass = CompilerUtils.CACHED_COMPILER.loadFromJava(name, java);
+        //logger.info("created class");
+        Object obj = javaClass.getDeclaredConstructor().newInstance();
 
-        String json = gson.toJson(CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java).getDeclaredConstructor().newInstance());
-        //logger.info(json);
-        gson.fromJson(json, CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java));
+        //logger.info("created obj");
 
-        JsonElement rootNode = gson.toJsonTree(CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java).getDeclaredConstructor().newInstance());
-        gson.fromJson(rootNode, CompilerUtils.CACHED_COMPILER.loadFromJava("Main", java));
+        String json = gson.toJson(obj);
+//        logger.info(json);
+        gson.fromJson(json, javaClass);
+
+        JsonElement rootNode = gson.toJsonTree(obj);
+        // JsonObject jsonObj = rootNode.getAsJsonObject();
+        gson.fromJson(rootNode, javaClass);
         gson.toJson(rootNode);
+
+        JsonParser.parseString(json);
     }
 }
