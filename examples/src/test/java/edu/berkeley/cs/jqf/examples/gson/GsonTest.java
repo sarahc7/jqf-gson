@@ -20,34 +20,21 @@ import static org.junit.Assume.*;
 public class GsonTest {
     private static final Logger logger = LoggerFactory.getLogger(GsonTest.class);
 
-//    @Fuzz
-//    public void testFromGson(@From(GsonGenerator.class) Pair<String, String> jsonAndJavaClass) throws Exception {
-//        gson.fromJson(jsonAndJavaClass.getKey(), CompilerUtils.CACHED_COMPILER.loadFromJava("Main", jsonAndJavaClass.getValue()));
-//    }
-
     @Fuzz
-    public void testToGson(@From(JavaGenerator.class) Pair gsonAndJava) throws Exception {
+    public void testGson(@From(JavaGenerator.class) Pair gsonAndJava) throws Exception {
         Gson gson = (Gson) gsonAndJava.getKey();
         String name = (String) ((Pair) gsonAndJava.getValue()).getKey();
         String java = (String) ((Pair) gsonAndJava.getValue()).getValue();
 
-        // logger.info("before created class");
-
         Class javaClass = CompilerUtils.CACHED_COMPILER.loadFromJava(name, java);
-        //logger.info("created class");
         Object obj = javaClass.getDeclaredConstructor().newInstance();
 
-        //logger.info("created obj");
-
-        String json = gson.toJson(obj);
-//        logger.info(json);
-        gson.fromJson(json, javaClass);
+//        String json = gson.toJson(obj);
+//        gson.fromJson(json, javaClass);
+//        JsonParser.parseString(json);
 
         JsonElement rootNode = gson.toJsonTree(obj);
-        // JsonObject jsonObj = rootNode.getAsJsonObject();
+        JsonObject jsonObj = rootNode.getAsJsonObject();
         gson.fromJson(rootNode, javaClass);
-        gson.toJson(rootNode);
-
-        JsonParser.parseString(json);
     }
 }

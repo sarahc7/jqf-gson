@@ -11,6 +11,8 @@ import javafx.util.Pair;
 
 import com.google.gson.*;
 import com.google.gson.internal.*;
+import com.google.gson.reflect.*;
+import com.google.gson.stream.*;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
@@ -46,56 +48,56 @@ public class JavaGenerator extends Generator<Pair> {
         return new Pair(generateGenerator(random), new Pair(className, generateTypes(random, type).toString()));
     }
 
-    private static class SpecificClassExclusionStrategy implements ExclusionStrategy {
-        private final Class<?> excludedThisClass;
-
-        public SpecificClassExclusionStrategy(Class<?> excludedThisClass) {
-            this.excludedThisClass = excludedThisClass;
-        }
-
+    private class DummyExclusionStrategy implements ExclusionStrategy {
         public boolean shouldSkipClass(Class<?> clazz) {
-            return excludedThisClass.equals(clazz);
+            return false;
         }
 
         public boolean shouldSkipField(FieldAttributes f) {
-            return excludedThisClass.equals(f.getDeclaredClass());
+            return false;
+        }
+    }
+
+    private class DummyTypeAdapterFactory implements TypeAdapterFactory {
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            return null;
+        }
+    }
+
+    private class DummyDateTypeAdapter extends TypeAdapter<Date> {
+        public Date read(JsonReader reader) {
+            return null;
+        }
+        public void write(JsonWriter writer, Date value) {
+            return;
         }
     }
 
     public Gson generateGenerator(SourceOfRandomness random) {
         GsonBuilder gson = new GsonBuilder();
-//        gson.addDeserializationExclusionStrategy(ExclusionStrategy strategy);
-//        gson.addSerializationExclusionStrategy(ExclusionStrategy strategy);
+        if (random.nextBoolean()) gson.addDeserializationExclusionStrategy(new DummyExclusionStrategy());
+        if (random.nextBoolean()) gson.addSerializationExclusionStrategy(new DummyExclusionStrategy());
         if (random.nextBoolean()) gson.disableHtmlEscaping();
         if (random.nextBoolean()) gson.disableInnerClassSerialization();
         if (random.nextBoolean()) gson.enableComplexMapKeySerialization();
-//        if (random.nextBoolean()) gson.excludeFieldsWithModifiers(int... modifiers);
+        if (random.nextBoolean()) gson.excludeFieldsWithModifiers(128); // Transient
         if (random.nextBoolean()) gson.excludeFieldsWithoutExposeAnnotation();
         if (random.nextBoolean()) gson.generateNonExecutableJson();
-//        if (random.nextBoolean()) gson.registerTypeAdapter(java.lang.reflect.Type type, java.lang.Object typeAdapter);
-//        if (random.nextBoolean()) gson.registerTypeAdapterFactory(TypeAdapterFactory factory);
-//        if (random.nextBoolean()) gson.registerTypeHierarchyAdapter(java.lang.Class<?> baseType, java.lang.Object typeAdapter);
+        if (random.nextBoolean()) gson.registerTypeAdapter(Date.class, new DummyDateTypeAdapter());
+        if (random.nextBoolean()) gson.registerTypeAdapterFactory(new DummyTypeAdapterFactory());
+        if (random.nextBoolean()) gson.registerTypeHierarchyAdapter(Date.class, new DummyDateTypeAdapter());
         if (random.nextBoolean()) gson.serializeNulls();
         if (random.nextBoolean()) gson.serializeSpecialFloatingPointValues();
         if (random.nextBoolean()) gson.setDateFormat(DateFormat.DEFAULT);
         if (random.nextBoolean()) gson.setDateFormat(DateFormat.DEFAULT, DateFormat.DEFAULT);
         if (random.nextBoolean()) gson.setDateFormat(new SimpleDateFormat().toPattern());
-        if (random.nextBoolean()) gson.setExclusionStrategies(new SpecificClassExclusionStrategy(getTypeClass(random.choose(TYPES))));
-        if (random.nextBoolean()) {
-            gson.setFieldNamingPolicy(random.choose(new HashSet<>(Arrays.asList(
-                    FieldNamingPolicy.IDENTITY,
-                    FieldNamingPolicy.LOWER_CASE_WITH_DASHES,
-                    FieldNamingPolicy.LOWER_CASE_WITH_DOTS,
-                    FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES,
-                    FieldNamingPolicy.UPPER_CAMEL_CASE,
-                    FieldNamingPolicy.UPPER_CAMEL_CASE_WITH_SPACES
-            ))));
-        }
-//        if (random.nextBoolean()) gson.setFieldNamingStrategy(FieldNamingStrategy fieldNamingStrategy);
+        if (random.nextBoolean()) gson.setExclusionStrategies(new DummyExclusionStrategy());
+        if (random.nextBoolean()) gson.setFieldNamingPolicy(FieldNamingPolicy.IDENTITY);
+        if (random.nextBoolean()) gson.setFieldNamingStrategy(FieldNamingPolicy.IDENTITY);
         if (random.nextBoolean()) gson.setLenient();
-//        if (random.nextBoolean()) gson.setLongSerializationPolicy(LongSerializationPolicy serializationPolicy);
+        if (random.nextBoolean()) gson.setLongSerializationPolicy(LongSerializationPolicy.DEFAULT);
         if (random.nextBoolean()) gson.setPrettyPrinting();
-//        if (random.nextBoolean()) gson.setVersion(double ignoreVersionsAfter);
+        if (random.nextBoolean()) gson.setVersion(1.0);
         return gson.create();
     }
 
@@ -281,21 +283,6 @@ public class JavaGenerator extends Generator<Pair> {
         return arrayField.addModifiers(Modifier.PUBLIC).initializer("{$L}", elements).build();
     }
 
-//    private FieldSpec generateMapField(SourceOfRandomness random, String name, MethodSpec.Builder constructor) {
-//        String t1 = random.choose(TYPES), t2 = random.choose(TYPES);
-//
-//        int numEntries = random.nextInt(4);
-//        for (int i = 0; i < numEntries; i++) {
-//            constructor.addStatement("$L.put($L, $L)", name, getValue(random, t1), getValue(random, t2));
-//        }
-//
-//        return FieldSpec.builder(ParameterizedTypeName
-//                .get(LinkedTreeMap.class, getTypeClass(t1), getTypeClass(t2)), name)
-//                .addModifiers(Modifier.PUBLIC)
-//                .initializer("new $T()", LinkedTreeMap.class)
-//                .build();
-//    }
-
     private String generateString(SourceOfRandomness random) {
         int len = random.nextInt(1, 6);
         String s = "";
@@ -339,13 +326,6 @@ public class JavaGenerator extends Generator<Pair> {
                 .initializer("new $T($L)", AtomicBoolean.class, random.nextBoolean())
                 .build();
     }
-
-//    private FieldSpec generateByteField(SourceOfRandomness random, String name) {
-//        return FieldSpec.builder(Byte.class, name)
-//                .addModifiers(Modifier.PUBLIC)
-//                .initializer("$L", random.nextBytes(1)[0])
-//                .build();
-//    }
 
     private String generateCharacter(SourceOfRandomness random) {
         return Character.toString(random.nextChar('a', 'z'));
