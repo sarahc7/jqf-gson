@@ -102,9 +102,9 @@ public class Coverage implements TraceEventVisitor {
     @Override
     public void visitCallEvent(CallEvent e) {
         counter.increment(e.getIid());
-//        String methodName = e.getInvokedMethodName();
-//
-//        if (methodName.startsWith("com/google/gson/")) coveredMethods.add(methodName);
+        String methodName = e.getInvokedMethodName();
+
+        if (methodName.startsWith("com/google/gson/")) coveredMethods.add(methodName);
     }
 
     /**
@@ -208,9 +208,9 @@ public class Coverage implements TraceEventVisitor {
         return changed;
     }
 
-//    public void updateCoveredMethods(Coverage that) {
-//        this.coveredMethods.addAll(that.getCoveredMethods());
-//    }
+    public void updateCoveredMethods(Coverage that) {
+        this.coveredMethods.addAll(that.getCoveredMethods());
+    }
 
     /** Returns a hash code of the edge counts in the coverage map. */
     @Override

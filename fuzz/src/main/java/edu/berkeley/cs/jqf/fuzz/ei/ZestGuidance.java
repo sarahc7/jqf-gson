@@ -186,13 +186,16 @@ public class ZestGuidance implements Guidance {
     /** The file where log data is written. */
     protected File logFile;
 
+    /** The file where covered methods are written. */
+    protected File methodsFile;
+
     /** The file where saved plot data is written. */
     protected File statsFile;
 
     /** The currently executing input (for debugging purposes). */
     protected File currentInputFile;
 
-    /** The file contianing the coverage information */ 
+    /** The file contianing the coverage information */
     protected File coverageFile;
 
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
@@ -389,6 +392,7 @@ public class ZestGuidance implements Guidance {
         }
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
+        this.methodsFile = new File(outputDirectory, "methods.log");
         this.currentInputFile = new File(outputDirectory, ".cur_input");
         this.coverageFile = new File(outputDirectory, "coverage_hash");
 
@@ -398,6 +402,7 @@ public class ZestGuidance implements Guidance {
         // We also do not check if the deletes are actually successful.
         statsFile.delete();
         logFile.delete();
+        methodsFile.delete();
         coverageFile.delete();
         for (File file : savedCorpusDirectory.listFiles()) {
             file.delete();
@@ -411,7 +416,7 @@ public class ZestGuidance implements Guidance {
 
     protected String getStatNames() {
         return "# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-            "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov";
+                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov";
     }
 
     /* Writes a line of text to a given log file. */
@@ -453,10 +458,10 @@ public class ZestGuidance implements Guidance {
     }
 
     // Call only if console exists
-    protected void displayStats(boolean force) {
+    protected void displayStats() {
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
-        if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD && !force) {
+        if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
             return;
         }
         long interlvalTrials = numTrials - lastNumTrials;
@@ -493,12 +498,12 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
-                    
+
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
                 console.printf("Number of executions: %,d (%s)\n", numTrials,
-                               maxTrials == Long.MAX_VALUE ? "no trial limit" : ("max " + maxTrials));
+                        maxTrials == Long.MAX_VALUE ? "no trial limit" : ("max " + maxTrials));
                 console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
                 console.printf("Cycles completed:     %d\n", cyclesCompleted);
                 console.printf("Unique failures:      %,d\n", uniqueFailures.size());
@@ -517,7 +522,7 @@ public class ZestGuidance implements Guidance {
         appendLineToFile(statsFile, plotData);
     }
 
-    /** Updates the data in the coverage file */ 
+    /** Updates the data in the coverage file */
     protected void updateCoverageFile() {
         try {
             PrintWriter pw = new PrintWriter(coverageFile);
@@ -528,7 +533,7 @@ public class ZestGuidance implements Guidance {
             throw new GuidanceException(ignore);
         }
     }
-    
+
     /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
@@ -568,7 +573,7 @@ public class ZestGuidance implements Guidance {
         infoLog("\n# Cycle " + cyclesCompleted + " completed.");
 
         // Go over all inputs and do a sanity check (plus log)
-        // infoLog("Here is a list of favored inputs:");
+        infoLog("Here is a list of favored inputs:");
         int sumResponsibilities = 0;
         numFavoredLastCycle = 0;
         for (Input input : savedInputs) {
@@ -580,7 +585,7 @@ public class ZestGuidance implements Guidance {
             }
         }
         int totalCoverageCount = totalCoverage.getNonZeroCount();
-        ("Total %d branches covered", totalCoverageCount);
+        infoLog("Total %d branches covered", totalCoverageCount);
         if (sumResponsibilities != totalCoverageCount) {
             if (multiThreaded) {
                 infoLog("Warning: other threads are adding coverage between test executions");
@@ -589,17 +594,8 @@ public class ZestGuidance implements Guidance {
             }
         }
 
-        try (PrintWriter out = new PrintWriter(logFile)) {
-            for (String m : totalCoverage.getCoveredMethods()) {
-                infoLog(m);
-            }
-            out.close();
-        } catch (IOException e) {
-            throw new GuidanceException(e);
-        }
-
         // Break log after cycle
-        // infoLog("\n\n\n");
+        infoLog("\n\n\n");
     }
 
     /**
@@ -708,10 +704,10 @@ public class ZestGuidance implements Guidance {
             return false;
         }
         if(elapsedMilliseconds < maxDurationMillis
-            && numTrials < maxTrials) {
+                && numTrials < maxTrials) {
             return true;
         } else {
-            displayStats(true);
+            displayStats();
             return false;
         }
     }
@@ -755,7 +751,7 @@ public class ZestGuidance implements Guidance {
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage
                     if (LIBFUZZER_COMPAT_OUTPUT) {
-                        displayStats(false);
+                        displayStats();
                     }
 
                     infoLog("Saving new input (at run %d): " +
@@ -809,14 +805,14 @@ public class ZestGuidance implements Guidance {
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
                     if (LIBFUZZER_COMPAT_OUTPUT) {
-                        displayStats(false);
+                        displayStats();
                     }
                 }
             }
 
             // displaying stats on every interval is only enabled for AFL-like stats screen
             if (!LIBFUZZER_COMPAT_OUTPUT) {
-                displayStats(false);
+                displayStats();
             }
 
             // Save input unconditionally if such a setting is enabled
@@ -842,14 +838,14 @@ public class ZestGuidance implements Guidance {
         }
 
         totalCoverage.updateCoveredMethods(runCoverage);
-//        try (PrintWriter out = new PrintWriter(logFile)) {
-//            for (String m : totalCoverage.getCoveredMethods()) {
-//                infoLog(m);
-//            }
-//            out.close();
-//        } catch (IOException e) {
-//            throw new GuidanceException(e);
-//        }
+        try (PrintWriter out = new PrintWriter(methodsFile)) {
+            for (String m : totalCoverage.getCoveredMethods()) {
+                appendLineToFile(methodsFile, m);
+            }
+            out.close();
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
 
         // Coverage after
         int nonZeroAfter = totalCoverage.getNonZeroCount();
@@ -985,9 +981,9 @@ public class ZestGuidance implements Guidance {
             Input oldResponsible = responsibleInputs.get(b);
             if (oldResponsible != null) {
                 oldResponsible.responsibilities.remove(b);
-                 infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
+                // infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
             } else {
-                 infoLog("-- Assuming new responsibility for %s", b);
+                // infoLog("-- Assuming new responsibility for %s", b);
             }
             // We are now responsible
             responsibleInputs.put(b, currentInput);
@@ -1199,7 +1195,7 @@ public class ZestGuidance implements Guidance {
             // If it exists in the list, return it
             if (key < values.size()) {
                 requested++;
-                 infoLog("Returning old byte at key=%d, total requested=%d", key, requested);
+                // infoLog("Returning old byte at key=%d, total requested=%d", key, requested);
                 return values.get(key);
             }
 
@@ -1211,7 +1207,7 @@ public class ZestGuidance implements Guidance {
                 int val = random.nextInt(256);
                 values.add(val);
                 requested++;
-                 infoLog("Generating fresh byte at key=%d, total requested=%d", key, requested);
+                // infoLog("Generating fresh byte at key=%d, total requested=%d", key, requested);
                 return val;
             }
         }

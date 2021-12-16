@@ -29,12 +29,12 @@ public class GsonTest {
         Class javaClass = CompilerUtils.CACHED_COMPILER.loadFromJava(name, java);
         Object obj = javaClass.getDeclaredConstructor().newInstance();
 
-//        String json = gson.toJson(obj);
-//        gson.fromJson(json, javaClass);
-//        JsonParser.parseString(json);
+        String json = gson.toJson(obj);
+        gson.fromJson(json, javaClass);
+        JsonParser.parseString(json);
 
-        JsonElement rootNode = gson.toJsonTree(obj);
-        JsonObject jsonObj = rootNode.getAsJsonObject();
-        gson.fromJson(rootNode, javaClass);
+//        JsonElement rootNode = gson.toJsonTree(obj);
+//        JsonObject jsonObj = rootNode.getAsJsonObject();
+//        gson.fromJson(rootNode, javaClass);
     }
 }
