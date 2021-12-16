@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Compiled class file
 *.class
 
@@ -21,3 +22,21 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+=======
+.DS_Store
+build/
+target/
+*.iml
+*.pyc
+.cache/
+.idea/
+.janala/
+*.log
+results-*/
+*_crashes/
+*.swp
+apidocs/
+experiments/*-results-*
+*-results/
+.java-version
+>>>>>>> 2305e415772b0091d5f0fa7c416d48dc3ab1943e
