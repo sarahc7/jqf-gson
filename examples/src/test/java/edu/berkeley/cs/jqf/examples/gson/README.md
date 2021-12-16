@@ -1,24 +1,25 @@
 # Test Generation for Gson
 
-This example uses JQF to generate test inputs for [Gson](https://github.com/google/gson), a tool that converts Java objects to JSON strings and vice-versa. The following steps walk through how to run JQF and locate generated test cases and covered methods. 
+This example uses JQF to generate test inputs for [Gson](https://github.com/google/gson), a tool that converts Java objects to JSON strings and vice-versa. The following steps walk through how to run JQF and locate generated test inputs and covered methods. 
 
 ### Step 0: Build jqf-gson
 
 ```
 git clone https://github.com/sarahc7/jqf-gson
+cd jqf-gson
 mvn package
 ```
 
 ### Step 1: Compile classes and run
 ```
-export GSON = [PATH TO jqf-gson]
+export GSON=[PATH TO jqf-gson]
 cd examples/src/test/java/edu/berkeley/cs/jqf/examples/gson/
 javac -cp .:$($GSON/scripts/examples_classpath.sh) GsonTest.java JavaGenerator.java
 ```
 
 ### Step 2: Fuzz with Zest
 ```
-$GSON/bin/jqf-zest -c .:$($GSON/scripts/examples_classpath.sh) GsonTest testToGson
+$GSON/bin/jqf-zest -c .:$($GSON/scripts/examples_classpath.sh) GsonTest testGson
 ```
 
 While running Zest, your screen should look like this:
