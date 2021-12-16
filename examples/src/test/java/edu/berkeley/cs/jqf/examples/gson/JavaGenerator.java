@@ -45,7 +45,7 @@ public class JavaGenerator extends Generator<Pair> {
 
         String className = generateTopLevelTypeName(random);
         TypeSpec.Builder type = TypeSpec.classBuilder(className);
-        return new Pair(generateGenerator(random), new Pair(className, generateTypes(random, type).toString()));
+        return new Pair(generateGsonObject(random), new Pair(className, generateTypes(random, type).toString()));
     }
 
     private class DummyExclusionStrategy implements ExclusionStrategy {
@@ -73,7 +73,7 @@ public class JavaGenerator extends Generator<Pair> {
         }
     }
 
-    public Gson generateGenerator(SourceOfRandomness random) {
+    public Gson generateGsonObject(SourceOfRandomness random) {
         GsonBuilder gson = new GsonBuilder();
         if (random.nextBoolean()) gson.addDeserializationExclusionStrategy(new DummyExclusionStrategy());
         if (random.nextBoolean()) gson.addSerializationExclusionStrategy(new DummyExclusionStrategy());
