@@ -10,7 +10,7 @@ cd jqf-gson
 mvn package
 ```
 
-### Step 1: Compile classes and run
+### Step 1: Compile classes
 ```
 export GSON=[PATH TO jqf-gson]
 cd examples/src/test/java/edu/berkeley/cs/jqf/examples/gson/
