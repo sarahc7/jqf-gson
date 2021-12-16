@@ -1,9 +1,0 @@
-com/google/gson/internal/$Gson$Types.resolve:(Ljava/lang/reflect/Type;Ljava/lang/Class;Ljava/lang/reflect/Type;Ljava/util/Map;)Ljava/lang/reflect/Type;
-com/google/gson/internal/PreJava9DateFormatProvider.getDatePartOfDateTimePattern:(I)Ljava/lang/String;
-com/google/gson/internal/PreJava9DateFormatProvider.getTimePartOfDateTimePattern:(I)Ljava/lang/String;
-com/google/gson/internal/PreJava9DateFormatProvider.getUSDateTimeFormat:(II)Ljava/text/DateFormat;
-com/google/gson/internal/bind/TypeAdapters$EnumTypeAdapter$1.<init>:(Lcom/google/gson/internal/bind/TypeAdapters$EnumTypeAdapter;Ljava/lang/reflect/Field;)V
-com/google/gson/internal/bind/TypeAdapters$EnumTypeAdapter$1.run:()Ljava/lang/Object;
-com/google/gson/internal/bind/TypeAdapters$EnumTypeAdapter$1.run:()Ljava/lang/Void;
-com/google/gson/stream/JsonWriter.close:(IIC)Lcom/google/gson/stream/JsonWriter;
-com/google/gson/stream/JsonWriter.open:(IC)Lcom/google/gson/stream/JsonWriter;
